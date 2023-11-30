@@ -37,9 +37,7 @@ async function getAiResponse(userMessage) {
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      messages: [
-        { role: 'user', content: userMessage },
-      ],
+      messages: [{ role: 'user', content: userMessage }],
       model: 'gpt-4',
       max_tokens: 4000,
       temperature: 1,
