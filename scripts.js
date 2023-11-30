@@ -39,10 +39,9 @@ async function getAiResponse(userMessage) {
     body: JSON.stringify({
       messages: [
         { role: 'user', content: userMessage },
-        { role: 'system', content: 'youre a helpful ai assistant' },
       ],
       model: 'gpt-4',
-      max_tokens: 5000,
+      max_tokens: 4000,
       temperature: 1,
       frequency_penalty: 0.5,
     }),
