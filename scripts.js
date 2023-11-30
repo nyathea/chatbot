@@ -27,7 +27,7 @@ function appendAiMessage(message) {
 
 async function getAiResponse(userMessage) {
   const thinkingMessage = displayThinkingMessage();
-  const apiKey = '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';
+  const apiKey = '<apikey>';
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
   const response = await fetch(apiUrl, {
