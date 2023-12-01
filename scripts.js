@@ -1,60 +1,72 @@
 const chatBox = document.querySelector('.chat-box');
 const messageInput = document.querySelector('.message-input');
 const sendButton = document.querySelector('.send-button');
+let lastMessageTime = 0;
+
+function appendMessage(message, role, profilePicture) {
+  const newMessage = document.createElement('div');
+  newMessage.classList.add('message', `${role}-message`);
+  newMessage.innerHTML = `<img src="${profilePicture}" alt="${role} Profile" class="profile-picture">
+    <div class="message-content">${message}</div>`;
+  chatBox.appendChild(newMessage);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
 function appendUserMessage(message) {
-  const userMessage = document.createElement('div');
-  userMessage.classList.add('message', 'user-message');
-  userMessage.innerHTML = `
-    <img src="https://flan.cafe/chatbot/user-pfp.png" alt="User Profile" class="profile-picture">
-    <div class="message-content">${message}</div>
-  `;
-  chatBox.appendChild(userMessage);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  appendMessage(message, 'user', 'https://flan.cafe/chatbot/user-pfp.png');
   getAiResponse(message);
 }
 
 function appendAiMessage(message) {
-  const aiMessage = document.createElement('div');
-  aiMessage.classList.add('message', 'ai-message');
-  aiMessage.innerHTML = `
-    <img src="https://flan.cafe/chatbot/ai-pfp2.png" alt="AI Profile" class="profile-picture">
-    <div class="message-content">${message}</div>
-  `;
-  chatBox.appendChild(aiMessage);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  appendMessage(message, 'ai', 'https://flan.cafe/chatbot/ai-pfp2.png');
 }
 
 async function getAiResponse(userMessage) {
   const thinkingMessage = displayThinkingMessage();
-  const apiKey = '<apikey>';
-  const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: userMessage }],
-      model: 'gpt-4',
-      max_tokens: 4000,
-      temperature: 1,
-      frequency_penalty: 0.5,
-    }),
-  });
+  try {
+    const apiKey = '<apiKey>';
+    const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
-  const data = await response.json();
-  const aiResponse = data.choices[0].message.content;
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: userMessage }],
+        model: 'gpt-3.5-turbo',
+        max_tokens: 4000,
+        temperature: 1,
+        frequency_penalty: 0.5,
+      }),
+    });
 
-  chatBox.removeChild(thinkingMessage);
-  appendAiMessage(aiResponse);
+    const data = await response.json();
+    const aiResponse = data.choices?.[0]?.message?.content;
+
+    chatBox.removeChild(thinkingMessage);
+
+    if (aiResponse) {
+      appendAiMessage(aiResponse);
+    } else {
+      console.error('Invalid AI response format:', data);
+      appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    chatBox.removeChild(thinkingMessage);
+    appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
+  } finally {
+    enableInput();
+  }
 }
 
 function sendUserMessage() {
   const userMessage = messageInput.value.trim();
   if (userMessage !== '') {
+    disableInput();
     appendUserMessage(userMessage);
     messageInput.value = '';
   }
@@ -70,7 +82,7 @@ messageInput.addEventListener('keypress', function (e) {
 
 function displayThinkingMessage() {
   const thinkingMessage = document.createElement('div');
-  thinkingMessage.classList.add('ai-message');
+  thinkingMessage.classList.add('ai-message', 'thinking-message');
   thinkingMessage.textContent = 'Thinking...';
   chatBox.appendChild(thinkingMessage);
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -78,16 +90,22 @@ function displayThinkingMessage() {
 }
 
 async function sendMessage() {
-  const userMessage = messageInput.value.trim();
-  if (userMessage !== '') {
-    appendUserMessage(userMessage);
-    messageInput.value = '';
+  const currentTime = Date.now();
+  const timeDifference = currentTime - lastMessageTime;
 
-    try {
-      await getAiResponse(userMessage);
-    } catch (error) {
-      console.error('Error:', error);
-      appendAiMessage('Sorry, an error occurred.');
+  if (timeDifference >= 5000) {
+    const userMessage = messageInput.value.trim();
+    if (userMessage !== '') {
+      disableInput();
+      appendUserMessage(userMessage);
+      messageInput.value = '';
+
+      try {
+        await getAiResponse(userMessage);
+        lastMessageTime = currentTime;
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
   }
 }
@@ -100,43 +118,12 @@ messageInput.addEventListener('keypress', (e) => {
   }
 });
 
-let lastMessageTime = 0;
-
-function displayRateLimitMessage() {
-  const rateLimitMessage = document.createElement('div');
-  rateLimitMessage.classList.add('ai-message', 'ai-message-rate-limit');
-  rateLimitMessage.textContent = 'Rate limit has exceeded. Please wait a moment before sending another message.';
-  chatBox.appendChild(rateLimitMessage);
-  chatBox.scrollTop = chatBox.scrollHeight;
-  return rateLimitMessage;
+function disableInput() {
+  messageInput.disabled = true;
+  sendButton.disabled = true;
 }
 
-async function sendMessage() {
-  const currentTime = Date.now();
-  const timeDifference = currentTime - lastMessageTime;
-  const rateLimit = 5000;
-
-  if (timeDifference >= rateLimit) {
-    const userMessage = messageInput.value.trim();
-    if (userMessage !== '') {
-      const existingRateLimitMessage = document.querySelector('.ai-message-rate-limit');
-      if (existingRateLimitMessage) {
-        chatBox.removeChild(existingRateLimitMessage);
-      }
-
-      appendUserMessage(userMessage);
-      messageInput.value = '';
-
-      try {
-        await getAiResponse(userMessage);
-        lastMessageTime = currentTime;
-      } catch (error) {
-        console.error('Error:', error);
-        appendAiMessage('Sorry, an error occurred.');
-      }
-    }
-  } else {
-    console.log('Rate limit exceeded. Please wait before sending another message.');
-    displayRateLimitMessage();
-  }
+function enableInput() {
+  messageInput.disabled = false;
+  sendButton.disabled = false;
 }
