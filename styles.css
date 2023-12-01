@@ -133,13 +133,6 @@ body {
   height: 25px;
 }
 
-.ai-message-rate-limit {
-  background-color: lightcoral;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 5px;
-}
-
 .footer-container {
   position: fixed;
   bottom: 50px;
