@@ -5,4 +5,4 @@ it's not done yet. i still see alot that can be added or improved and im not rea
 
 ## what's next?
 - Dall-e functionality
-- More UI improvemnents for desktop/mobile
+- UI improvements for desktop/mobile
