@@ -2,6 +2,7 @@ const chatBox = document.querySelector('.chat-box');
 const messageInput = document.querySelector('.message-input');
 const sendButton = document.querySelector('.send-button');
 let lastMessageTime = 0;
+let mode = 'gpt'; 
 
 function appendMessage(message, role, profilePicture) {
   const newMessage = document.createElement('div');
@@ -12,23 +13,13 @@ function appendMessage(message, role, profilePicture) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-function appendUserMessage(message) {
-  appendMessage(message, 'user', 'https://flan.cafe/chatbot/user-pfp.png');
-  getAiResponse(message);
-}
-
-function appendAiMessage(message) {
-  appendMessage(message, 'ai', 'https://flan.cafe/chatbot/ai-pfp2.png');
-}
-
 async function getAiResponse(userMessage) {
   const thinkingMessage = displayThinkingMessage();
 
   try {
-    const apiKey = '<apiKey>';
-    const apiUrl = 'https://api.openai.com/v1/chat/completions';
-
-    const response = await fetch(apiUrl, {
+    let apiKey = '<apikey here>'; 
+    let apiUrl = 'https://api.openai.com/v1/chat/completions'; 
+    let requestOptions = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -41,82 +32,142 @@ async function getAiResponse(userMessage) {
         temperature: 1,
         frequency_penalty: 0.5,
       }),
-    });
+    };
 
-    const data = await response.json();
-    const aiResponse = data.choices?.[0]?.message?.content;
-
-    chatBox.removeChild(thinkingMessage);
-
-    if (aiResponse) {
-      appendAiMessage(aiResponse);
-    } else {
-      console.error('Invalid AI response format:', data);
-      appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
+    if (mode === 'dalle') {
+      apiKey = '<apikey here>'; 
+      apiUrl = 'https://api.openai.com/v1/images/generations'; 
+      requestOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt: userMessage.replace('dallecreate', '').trim(),
+          size: '1024x1024',
+          quality: 'hd',
+          style: 'natural',
+          n: 1,
+        }),
+      };
     }
+
+const response = await fetch(apiUrl, requestOptions);
+const data = await response.json();
+
+let aiResponse = [];
+
+if (mode === 'gpt') {
+  aiResponse = data.choices?.[0]?.message?.content ? [data.choices[0].message.content] : [];
+} else {
+  if (Array.isArray(data.data)) {
+    aiResponse = data.data.map(item => item.url);
+  } else if (data.url) {
+    aiResponse = [data.url];
+  }
+}
+
+chatBox.removeChild(thinkingMessage);
+
+if (aiResponse.length > 0) {
+  if (mode === 'gpt') {
+    appendAiMessage(aiResponse[0]);
+  } else {
+    appendDalleImages(aiResponse);
+  }
+} else {
+  console.error('Invalid AI response format:', data);
+  appendAiMessage('An error occurred. Please try again later.');
+}
   } catch (error) {
     console.error('Error:', error);
     chatBox.removeChild(thinkingMessage);
-    appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
+    appendAiMessage('An error occurred. Please try again later.');
   } finally {
     enableInput();
   }
 }
 
+function appendDalleImages(images) {
+  const aiMessageContainer = document.createElement('div');
+  aiMessageContainer.classList.add('ai-message', 'message');
+
+  const profilePicture = 'https://flan.cafe/chatbot/ai-pfp2.png';
+
+  images.forEach((imageUrl) => {
+    const imageElement = document.createElement('img');
+    imageElement.src = imageUrl;
+    imageElement.classList.add('dalle-image');
+    imageElement.style.width = '300px';
+    imageElement.style.height = '300px';
+    imageElement.style.borderRadius = '10px';
+    imageElement.dataset.original = imageUrl;
+
+    aiMessageContainer.appendChild(imageElement);
+  });
+
+  const profilePictureElement = document.createElement('img');
+  profilePictureElement.src = profilePicture;
+  profilePictureElement.alt = 'AI Profile';
+  profilePictureElement.classList.add('profile-picture');
+
+  aiMessageContainer.appendChild(profilePictureElement);
+
+  chatBox.appendChild(aiMessageContainer);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function sendUserMessage() {
   const userMessage = messageInput.value.trim();
+
+  if (userMessage.toLowerCase().includes('dallecreate')) {
+    mode = 'dalle';
+  } else {
+    mode = 'gpt';
+  }
+
   if (userMessage !== '') {
-    disableInput();
     appendUserMessage(userMessage);
+    getAiResponse(userMessage);
     messageInput.value = '';
   }
 }
 
-sendButton.addEventListener('click', sendUserMessage);
-
-messageInput.addEventListener('keypress', function (e) {
-  if (e.key === 'Enter') {
-    sendUserMessage();
-  }
-});
-
 function displayThinkingMessage() {
+  const thinkingMessageContainer = document.createElement('div');
+  thinkingMessageContainer.classList.add('ai-message', 'message');
+
+  const profilePicture = document.createElement('img');
+  profilePicture.src = 'https://flan.cafe/chatbot/ai-pfp2.png';
+  profilePicture.alt = 'AI Profile';
+  profilePicture.classList.add('profile-picture');
+
   const thinkingMessage = document.createElement('div');
-  thinkingMessage.classList.add('ai-message', 'thinking-message');
-  thinkingMessage.textContent = 'Thinking...';
-  chatBox.appendChild(thinkingMessage);
+  thinkingMessage.classList.add('message-content', 'thinking-message');
+
+  if (mode === 'dalle') {
+    thinkingMessage.textContent = 'Generating an image for you. Please wait...';
+  } else {
+    thinkingMessage.textContent = 'Generating a response for you. Please wait...';
+  }
+
+  thinkingMessageContainer.appendChild(profilePicture);
+  thinkingMessageContainer.appendChild(thinkingMessage);
+  chatBox.appendChild(thinkingMessageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
-  return thinkingMessage;
+
+  return thinkingMessageContainer;
 }
 
-async function sendMessage() {
-  const currentTime = Date.now();
-  const timeDifference = currentTime - lastMessageTime;
-
-  if (timeDifference >= 5000) {
-    const userMessage = messageInput.value.trim();
-    if (userMessage !== '') {
-      disableInput();
-      appendUserMessage(userMessage);
-      messageInput.value = '';
-
-      try {
-        await getAiResponse(userMessage);
-        lastMessageTime = currentTime;
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }
-  }
+function appendUserMessage(message) {
+  appendMessage(message, 'user', 'https://flan.cafe/chatbot/user-pfp.png');
 }
 
-sendButton.addEventListener('click', sendMessage);
-
-messageInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') {
-    sendMessage();
-  }
-});
+function appendAiMessage(message) {
+  appendMessage(message, 'ai', 'https://flan.cafe/chatbot/ai-pfp2.png');
+}
 
 function disableInput() {
   messageInput.disabled = true;
@@ -127,3 +178,11 @@ function enableInput() {
   messageInput.disabled = false;
   sendButton.disabled = false;
 }
+
+sendButton.addEventListener('click', sendUserMessage);
+
+messageInput.addEventListener('keypress', function (e) {
+  if (e.key === 'Enter') {
+    sendUserMessage();
+  }
+});
