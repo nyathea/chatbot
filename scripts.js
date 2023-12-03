@@ -158,11 +158,19 @@ function displayThinkingMessage() {
   chatBox.appendChild(thinkingMessageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 
+  disableInput();
+
   return thinkingMessageContainer;
 }
 
+function removeThinkingMessage(thinkingMessageContainer) {
+  thinkingMessageContainer.remove();
+  enableInput();
+}
+
 function appendUserMessage(message) {
-  appendMessage(message, 'user', 'https://flan.cafe/chatbot/user-pfp.png');
+  const customProfilePicture = localStorage.getItem('customProfilePicture');
+  appendMessage(message, 'user', customProfilePicture || 'https://flan.cafe/chatbot/user-pfp.png');
 }
 
 function appendAiMessage(message) {
