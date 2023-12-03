@@ -1,4 +1,6 @@
 body {
+  position: fixed;
+  width: 100%;
   font-family: Arial, sans-serif;
   overflow: hidden;
   margin: 0;
@@ -7,7 +9,7 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-image: url('https://flan.cafe/chatbot/wall2.JPG');
+  background-image: url('https://flan.cafe/wall.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -22,6 +24,7 @@ body {
   padding: 20px;
   border-radius: 15px;
   background-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   overflow: hidden;
@@ -33,10 +36,12 @@ body {
   padding: 15px;
   margin-bottom: 20px;
   border-radius: 15px;
-  background-color: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(5px); 
-  word-wrap: break-word;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
+  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
@@ -78,21 +83,35 @@ body {
 
 .user-message .message-content {
   padding: 8px;
-  border-radius: 8px;
-  background-color: lightgray;
+  border-radius: 15px 15px 5px 15px;
+  background-color: rgba(211, 211, 211, 0.8);
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 70%;
   margin-left: 50px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ai-message .message-content {
   padding: 8px;
-  border-radius: 8px;
-  background-color: lightblue;
+  border-radius: 15px 15px 15px 5px;
+  background-color: rgba(173, 216, 230, 0.8);
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-width: 70%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .input-box {
@@ -100,9 +119,19 @@ body {
   align-items: center;
   border-radius: 15px;
   background-color: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  box-shadow: 0 2px 5px rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.input-box .profile-picture {
+  border-radius: 50%;
+  align-self: center;
+  margin-top: 5px;
+  margin-right: 5px;
+  margin-left: 1px;
 }
 
 .message-input {
@@ -113,19 +142,24 @@ body {
 }
 
 .send-button {
-  width: 32px;
-  height: 32px;
-  border-radius: 35%;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
   border: none;
   cursor: pointer;
   background-color: rgba(20, 20, 200, 0.5);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
   margin-left: 5px;
-  margin-top: 2px;
+  margin-top: 0.5px;
+}
+
+.send-button:hover {
+  background-color: rgba(20, 20, 200, 0.8);
+  transition: background-color 0.3s ease-in-out;
 }
 
 .arrow {
@@ -133,23 +167,6 @@ body {
   height: 25px;
 }
 
-.footer-container {
-  position: fixed;
-  bottom: 50px;
-  left: 615px;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.5);
-  border-radius: 30px;
-  backdrop-filter: blur(5px);
-  z-index: 999;
-}
-
-.footer-text {
-  font-size: 14px;
-  color: black;
-}
-
-.footer-text p {
-  margin: 5px 0;
-  line-height: 1.2;
+::selection {
+  background-color: rgba(20, 20, 200, 0.5);
 }
