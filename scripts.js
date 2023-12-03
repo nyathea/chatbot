@@ -2,7 +2,7 @@ const chatBox = document.querySelector('.chat-box');
 const messageInput = document.querySelector('.message-input');
 const sendButton = document.querySelector('.send-button');
 let lastMessageTime = 0;
-let mode = 'gpt'; 
+let mode = 'gpt';
 
 function appendMessage(message, role, profilePicture) {
   const newMessage = document.createElement('div');
@@ -13,12 +13,33 @@ function appendMessage(message, role, profilePicture) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+let conversationHistory = JSON.parse(localStorage.getItem('conversationHistory')) || [];
+
 async function getAiResponse(userMessage) {
-  const thinkingMessage = displayThinkingMessage();
+  let thinkingMessage;
 
   try {
-    let apiKey = '<apikey here>'; 
-    let apiUrl = 'https://api.openai.com/v1/chat/completions'; 
+    let apiKey = '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';
+    let apiUrl = 'https://api.openai.com/v1/chat/completions';
+
+    const userMessageObj = { role: 'user', content: userMessage };
+
+    if (conversationHistory.length === 0 || conversationHistory[0].content !== userMessage) {
+      conversationHistory.unshift(userMessageObj);
+      localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
+    }
+
+    if (conversationHistory.length > 20) {
+      const userMessageToResend = userMessage;
+      thinkingMessage = displayThinkingMessage();
+      localStorage.removeItem('conversationHistory');
+      conversationHistory = [];
+      removeThinkingMessage(thinkingMessage);
+      return getAiResponse(userMessageToResend);
+    }
+
+    thinkingMessage = displayThinkingMessage();
+
     let requestOptions = {
       method: 'POST',
       headers: {
@@ -26,17 +47,18 @@ async function getAiResponse(userMessage) {
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: userMessage }],
-        model: 'gpt-3.5-turbo',
-        max_tokens: 4000,
-        temperature: 1,
-        frequency_penalty: 0.5,
+        messages: conversationHistory,
+        model: 'gpt-3.5-turbo-0613',
+        max_tokens: 3000,
+        temperature: 0.5,
+        frequency_penalty: 0.2,
       }),
     };
 
     if (mode === 'dalle') {
-      apiKey = '<apikey here>'; 
-      apiUrl = 'https://api.openai.com/v1/images/generations'; 
+      apiKey = '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';
+      apiUrl = 'https://api.openai.com/v1/images/davinci-codex';
+
       requestOptions = {
         method: 'POST',
         headers: {
@@ -44,78 +66,75 @@ async function getAiResponse(userMessage) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'dall-e-3',
           prompt: userMessage.replace('dallecreate', '').trim(),
-          size: '1024x1024',
-          quality: 'hd',
-          style: 'natural',
-          n: 1,
+          n: 3,
         }),
       };
+
+      const response = await fetch(apiUrl, requestOptions);
+      const data = await response.json();
+
+      const responses = data.choices?.map(choice => choice.text);
+
+      chatBox.removeChild(thinkingMessage);
+      appendDalleImages(responses);
+    } else {
+      const response = await fetch(apiUrl, requestOptions);
+      const data = await response.json();
+      const aiResponse = data.choices?.[0]?.message?.content;
+
+      chatBox.removeChild(thinkingMessage);
+
+      if (aiResponse) {
+        conversationHistory.push({ role: 'user', content: userMessage });
+        conversationHistory.push({ role: 'assistant', content: aiResponse });
+        appendAiMessage(aiResponse);
+      } else {
+        console.error('Invalid AI response format:', data);
+        appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
+      }
     }
-
-const response = await fetch(apiUrl, requestOptions);
-const data = await response.json();
-
-let aiResponse = [];
-
-if (mode === 'gpt') {
-  aiResponse = data.choices?.[0]?.message?.content ? [data.choices[0].message.content] : [];
-} else {
-  if (Array.isArray(data.data)) {
-    aiResponse = data.data.map(item => item.url);
-  } else if (data.url) {
-    aiResponse = [data.url];
-  }
-}
-
-chatBox.removeChild(thinkingMessage);
-
-if (aiResponse.length > 0) {
-  if (mode === 'gpt') {
-    appendAiMessage(aiResponse[0]);
-  } else {
-    appendDalleImages(aiResponse);
-  }
-} else {
-  console.error('Invalid AI response format:', data);
-  appendAiMessage('An error occurred. Please try again later.');
-}
   } catch (error) {
     console.error('Error:', error);
     chatBox.removeChild(thinkingMessage);
-    appendAiMessage('An error occurred. Please try again later.');
+    appendAiMessage('An error occurred. This is either my doing or OpenAI\'s fault. Please try again later.');
   } finally {
     enableInput();
   }
+
+  localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
 }
 
 function appendDalleImages(images) {
-  const aiMessageContainer = document.createElement('div');
-  aiMessageContainer.classList.add('ai-message', 'message');
-
   const profilePicture = 'https://flan.cafe/chatbot/ai-pfp2.png';
-
+  
   images.forEach((imageUrl) => {
+    const aiMessageContainer = document.createElement('div');
+    aiMessageContainer.classList.add('ai-message', 'message');
+
     const imageElement = document.createElement('img');
     imageElement.src = imageUrl;
     imageElement.classList.add('dalle-image');
-    imageElement.style.width = '300px';
-    imageElement.style.height = '300px';
+    imageElement.style.width = '200px';
+    imageElement.style.height = '200px';
     imageElement.style.borderRadius = '10px';
     imageElement.dataset.original = imageUrl;
 
-    aiMessageContainer.appendChild(imageElement);
+    const messageContent = document.createElement('div');
+    messageContent.classList.add('message-content');
+    messageContent.appendChild(imageElement);
+
+    const profilePictureElement = document.createElement('img');
+    profilePictureElement.src = profilePicture;
+    profilePictureElement.alt = 'AI Profile';
+    profilePictureElement.classList.add('profile-picture');
+
+    aiMessageContainer.appendChild(profilePictureElement);
+    aiMessageContainer.appendChild(messageContent);
+
+    chatBox.appendChild(aiMessageContainer);
   });
 
-  const profilePictureElement = document.createElement('img');
-  profilePictureElement.src = profilePicture;
-  profilePictureElement.alt = 'AI Profile';
-  profilePictureElement.classList.add('profile-picture');
-
-  aiMessageContainer.appendChild(profilePictureElement);
-
-  chatBox.appendChild(aiMessageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
@@ -158,11 +177,19 @@ function displayThinkingMessage() {
   chatBox.appendChild(thinkingMessageContainer);
   chatBox.scrollTop = chatBox.scrollHeight;
 
+  disableInput();
+
   return thinkingMessageContainer;
 }
 
+function removeThinkingMessage(thinkingMessageContainer) {
+  thinkingMessageContainer.remove();
+  enableInput();
+}
+
 function appendUserMessage(message) {
-  appendMessage(message, 'user', 'https://flan.cafe/chatbot/user-pfp.png');
+  const customProfilePicture = localStorage.getItem('customProfilePicture');
+  appendMessage(message, 'user', customProfilePicture || 'https://flan.cafe/chatbot/user-pfp.png');
 }
 
 function appendAiMessage(message) {
@@ -186,3 +213,42 @@ messageInput.addEventListener('keypress', function (e) {
     sendUserMessage();
   }
 });
+
+function setCustomProfilePicture(fileInput) {
+  const file = fileInput.files[0];
+  
+  if (file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+      const imageUrl = event.target.result;
+      localStorage.setItem('customProfilePicture', imageUrl);
+      const userPfpElements = document.querySelectorAll('.user-message .profile-picture');
+      if (userPfpElements.length > 0) {
+        userPfpElements.forEach(function(element) {
+          element.src = imageUrl;
+        });
+      }
+    };
+    
+    reader.readAsDataURL(file);
+  }
+}
+
+function handleProfilePictureClick() {
+  const fileInput = document.getElementById('customPfpInput');
+  if (fileInput) {
+    fileInput.click();
+  }
+}
+
+window.onload = function() {
+  const customProfilePicture = localStorage.getItem('customProfilePicture');
+  const userPfpElements = document.querySelectorAll('.user-message .profile-picture');
+  
+  if (customProfilePicture && userPfpElements.length > 0) {
+    userPfpElements.forEach(function(element) {
+      element.src = customProfilePicture;
+    });
+  }
+};
