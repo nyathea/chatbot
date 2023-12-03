@@ -9,19 +9,15 @@
 <body>
   <div class="chat-container">
     <div class="chat-box" id="chatBox">
-      
+      <!-- Existing chat messages go here -->
     </div>
     <div class="input-box">
+      <div class="user-message">
+        <img class="profile-picture" src="default_profile.jpg" alt="Profile Picture" onclick="handleProfilePictureClick()">
+      </div>
+      <input type="file" id="customPfpInput" style="display: none" onchange="setCustomProfilePicture(this)">    
       <input type="text" class="message-input" placeholder="Type your message...">
-      
       <button class="send-button"><img class="arrow" src="https://flan.cafe/chatbot/arrow.png" alt="Arrow"></button>
-    </div>
-  </div>
-
-  <div class="footer-container">
-    <div class="footer-text">
-      <p>Chatbot v0.0.4 GPT-4</p>
-      <p>Powered by OpenAI</p>
     </div>
   </div>
 
