@@ -1,12 +1,14 @@
 # chatbot
-Source code for my chatbot that uses openai's gpt-3.5-turbo api
+source code for my chatbot that uses openai's api.
 
-it's not done yet. i still see alot that can be added or improved and im not really experienced in the slightest so the css and js might be a little messy.
+this is just a little project im working on, styles and javascript may not be the best :3 
 
 ## features:
 - Chatting with gpt-3.5-turbo
 - Generate images with dall-e 3 via "dallecreate <your prompt>"
 
 ## what's next?
-- Options panel for changing system message for gpt, dall-e config, use own api key, and more
+- Options panel for changing system message, dall-e 3 config, use ur own api key, and more.
+- Improve the AI memory.
+- Possibly custom backgrounds?
 - UI improvements for desktop/mobile
