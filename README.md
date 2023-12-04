@@ -5,7 +5,7 @@ this is just a little project im working on, styles and javascript may not be th
 
 ## features:
 - Chatting with gpt-3.5-turbo
-- Generate images by typing "dallecreate (your prompt)" in chat. this is a seperate mode from the regular chat so the ai has no knowledge of this.
+- Generate images by typing "dallecreate (your prompt)" in chat.
 
 ## what's next?
 - Options panel for changing system message, dall-e 3 config, use ur own api key, and more.
